@@ -113,11 +113,33 @@ const createPlace = async (req, res, next) => {
   res.status(201).json({ place: createdPlace });
 };
 
-const deletePlace = (req, res, next) => {
+const deletePlace = async (req, res, next) => {
     const placeId = req.params.pid;
-    //delete place from array
-    DUMMY_PLACES = DUMMY_PLACES.filter(p => p.id !== placeId);
 
+    let place;
+
+    //find the place by place id from the mongo database
+    try {
+      place = await Place.findById(placeId);
+    }catch(err){
+      const error = new HttpError('Something went wrong, could not delete the place.', 500);
+      return next(error);
+    }
+
+    //display the error message if place is not available with given place id
+    if(!place) {
+      const error = new HttpError('Could not find the place for the provided place id.', 404);
+      return next(error);
+    }
+
+    //if place is available with given id, delete the place from the MongoDB
+    try{
+      await place.deleteOne();
+    }catch(err){
+      const error = new HttpError('Something went wrong, could not delete the place.', 500);
+      return next(error);
+    }
+    
     res.status(200).json({message: 'Successfully deleted a place.'});
 };
 
